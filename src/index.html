@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polygon Viewer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <label for="sectionSelect">Select Section: </label>
+    <select id="sectionSelect"></select>
+
+    <div id="emptySectionMessage">
+        This section has no polygons to display.
+    </div>
+
+    <div class="container">
+        <div class="viewer-container">
+            <h2>2D Viewer</h2>
+            <div id="viewer2d"></div>
+        </div>
+        <div class="viewer-container">
+            <h2>3D Viewer</h2>
+            <div id="viewer3d"></div>
+        </div>
+    </div>
+
+    <!-- Import libraries -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <!-- Import our JavaScript -->
+    <script src="./PolygonViewer.js" type="module"></script>
+</body>
+
+</html>
