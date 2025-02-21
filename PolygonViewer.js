@@ -211,9 +211,11 @@ class PolygonViewer {
      * Ensures that the previous grid and axes helpers are removed before creating new ones.
      */
     create3DGrid() {
-        // Calculate scene bounds from all vertices
-        const allPoints = this.currSection.polygons.flatMap(polygon =>
-            polygon.points3D.map(p => p.vertex)
+        // Calculate scene bounds from all vertices across all sections
+        const allPoints = this.sections.flatMap(section =>
+            section.polygons.flatMap(polygon =>
+                polygon.points3D.map(p => p.vertex)
+            )
         );
 
         const bounds = {
