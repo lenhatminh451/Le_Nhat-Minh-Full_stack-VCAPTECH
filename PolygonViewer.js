@@ -380,21 +380,49 @@ class PolygonViewer {
         this.currSection.polygons.forEach(polygon => {
             const points3D = polygon.points3D;
 
-            // Create geometry
-            const shape = new THREE.Shape();
-            shape.moveTo(points3D[0].vertex[0], points3D[0].vertex[2]);
+            // Create an array of 3D points
+            const vertices = [];
+            const triangles = [];
 
-            for (let i = 1; i < points3D.length; i++) {
-                shape.lineTo(points3D[i].vertex[0], points3D[i].vertex[2]);
+            // Convert points to Vector3
+            points3D.forEach(point => (
+                vertices.push(
+                    new THREE.Vector3(
+                        point.vertex[0],    // X
+                        point.vertex[1],    // Y
+                        point.vertex[2],    // Z
+                    )
+                )
+            ));
+
+            // Triangulate the polygon
+            // We'll use the first point as the center and create triangles
+            // This is a simple triangulation method - for complex polygons you might want to use a more robust algorithm
+            for (let i = 0; i < vertices.length - 1; i++) {
+                triangles.push(0); // Center point
+                triangles.push(i + 1);
+                triangles.push(i + 2 > vertices.length - 1 ? 1 : i + 2);
             }
 
-            const extrudeSettings = {
-                depth: Math.max(...points3D.map(p => p.vertex[1])) -
-                    Math.min(...points3D.map(p => p.vertex[1])),
-                bevelEnabled: false
-            };
+            // Create geometry
+            const geometry = new THREE.BufferGeometry();
+            
+            // Create positions array from vertices
+            const positions = new Float32Array(vertices.length * 3);
+            vertices.forEach((vertex, i) => {
+                positions[i * 3] = vertex.x;
+                positions[i * 3 + 1] = vertex.y;
+                positions[i * 3 + 2] = vertex.z;
+            });
 
-            const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+            // Set attributes
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setIndex(triangles);
+            
+            // Compute vertex normals for proper lighting
+            geometry.computeVertexNormals();
+
+            // Create material
             const material = new THREE.MeshPhongMaterial({
                 color: parseInt(polygon.color, 16),
                 side: THREE.DoubleSide,
