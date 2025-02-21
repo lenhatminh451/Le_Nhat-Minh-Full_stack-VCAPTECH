@@ -363,6 +363,7 @@ class PolygonViewer {
             centerY + cameraDistance
         );
         this.camera.lookAt(centerX, centerZ, centerY);
+        this.controls.target.set(centerX, centerZ, centerY);
     }
 
     // ============== SECTION HANDLING METHODS ==============
