@@ -11,10 +11,6 @@ class PolygonViewer {
         this.data = jsonData;
         this.sections = this.data.polygonsBySection;
         this.currSection = this.sections[0];
-        this.meshes = [];   // Stores meshes
-        this.gridHelper3D = null;       // 3D grid helper
-        this.axesHelper3D = null;       // 3D axes helper
-        this.labels = [];   // Stores axis labels
         this.init2DViewer();
         this.init3DViewer();
     }
@@ -70,7 +66,6 @@ class PolygonViewer {
         const dropdown = d3.select('#sectionSelect')
             .on('change', () => {
                 this.update2DSection();
-                this.update3DSection();
             });
 
         // Populate dropdown with section names
@@ -216,22 +211,6 @@ class PolygonViewer {
      * Ensures that the previous grid and axes helpers are removed before creating new ones.
      */
     create3DGrid() {
-        // Remove the old grid helper
-        if (this.gridHelper3D) {
-            this.scene.remove(this.gridHelper3D);
-        }
-
-        // Remove the old axes helper
-        if (this.axesHelper3D) {
-            this.scene.remove(this.axesHelper3D);
-        }
-
-        // Clear any existing labels
-        if (this.labels) {
-            this.labels.forEach(label => this.scene.remove(label));
-        }
-        this.labels = [];
-
         // Calculate scene bounds from all vertices
         const allPoints = this.currSection.polygons.flatMap(polygon =>
             polygon.points3D.map(p => p.vertex)
@@ -261,14 +240,14 @@ class PolygonViewer {
         const gridDivisions = 20;
 
         // Add grid
-        this.gridHelper3D = new THREE.GridHelper(gridSize, gridDivisions);
-        this.gridHelper3D.position.set(centerX, 0, centerY);    // Center the grid relative to the geometry
-        this.scene.add(this.gridHelper3D);
+        const gridHelper3D = new THREE.GridHelper(gridSize, gridDivisions);
+        gridHelper3D.position.set(centerX, 0, centerY);    // Center the grid relative to the geometry
+        this.scene.add(gridHelper3D);
 
         // Add axes helper
-        this.axesHelper3D = new THREE.AxesHelper(gridSize / 2);
-        this.axesHelper3D.position.set(centerX, 0, centerY);
-        this.scene.add(this.axesHelper3D);
+        const axesHelper3D = new THREE.AxesHelper(gridSize / 2);
+        axesHelper3D.position.set(centerX, 0, centerY);
+        this.scene.add(axesHelper3D);
 
         // Create axis labels
         const createLabel = (text, position, color, size = 1.5) => {
@@ -309,7 +288,6 @@ class PolygonViewer {
                         '#666666', 
                         0.8
                     );
-                    this.labels.push(label);
                     this.scene.add(label);
                 }
             }
@@ -323,7 +301,6 @@ class PolygonViewer {
                         '#666666', 
                         0.8
                     );
-                    this.labels.push(label);
                     this.scene.add(label);
                 }
             }
@@ -337,7 +314,6 @@ class PolygonViewer {
                         '#666666', 
                         0.8
                     );
-                    this.labels.push(label);
                     this.scene.add(label);
                 }
             }
@@ -345,15 +321,12 @@ class PolygonViewer {
 
         // Add axis labels with offset from center
         const labelOffset = gridSize / 2 + gridSize / 10;
-        this.labels.push(createLabel('X', new THREE.Vector3(centerX + labelOffset, 0, centerY), '#ff0000', 2));
-        this.labels.push(createLabel('Y', new THREE.Vector3(centerX, 0, centerY + labelOffset), '#0000ff', 2));
-        this.labels.push(createLabel('Z', new THREE.Vector3(centerX, labelOffset, centerY), '#00ff00', 2));
+        this.scene.add(createLabel('X', new THREE.Vector3(centerX + labelOffset, 0, centerY), '#ff0000', 2));
+        this.scene.add(createLabel('Y', new THREE.Vector3(centerX, 0, centerY + labelOffset), '#0000ff', 2));
+        this.scene.add(createLabel('Z', new THREE.Vector3(centerX, labelOffset, centerY), '#00ff00', 2));
 
         // Add grid values
         addGridValues();
-
-        // Add all labels to scene
-        this.labels.forEach(label => this.scene.add(label));
 
         // Position camera to view the centered geometry
         const cameraDistance = gridSize;
@@ -457,87 +430,66 @@ class PolygonViewer {
     }
 
     /**
-     * Updates the 3D section by removing old meshes, creating a new 3D grid, 
-     *      and redrawing the 3D polygons.
-     */
-    update3DSection() {
-        // Remove the old meshes from the scene
-        this.meshes.forEach(mesh => {
-            this.scene.remove(mesh);
-        });
-
-        // Create 3D Grid
-        this.create3DGrid();
-
-        // Draw 3D polygons
-        this.draw3DSection();
-    }
-
-    /**
      * Draws the polygons of the current section in 3D space by creating extruded geometries
      *      and adding them to the scene.
      */
     draw3DSection() {
-        // Clear the meshes array
-        this.meshes = [];
+        // Draw all polygons from all sections
+        this.sections.forEach(section => {
+            section.polygons.forEach(polygon => {
+                const points3D = polygon.points3D;
 
-        // Draw all polygons from current section
-        this.currSection.polygons.forEach(polygon => {
-            const points3D = polygon.points3D;
+                // Create an array of 3D points
+                const vertices = [];
+                const triangles = [];
 
-            // Create an array of 3D points
-            const vertices = [];
-            const triangles = [];
-
-            // Convert points to Vector3
-            points3D.forEach(point => (
-                vertices.push(
-                    new THREE.Vector3(
-                        point.vertex[0],    // X
-                        point.vertex[2],    // Z
-                        point.vertex[1],    // Y
+                // Convert points to Vector3
+                points3D.forEach(point => (
+                    vertices.push(
+                        new THREE.Vector3(
+                            point.vertex[0],    // X
+                            point.vertex[2],    // Z
+                            point.vertex[1],    // Y
+                        )
                     )
-                )
-            ));
+                ));
 
-            // Triangulate the polygon
-            // We'll use the first point as the center and create triangles
-            // This is a simple triangulation method - for complex polygons you might want to use a more robust algorithm
-            for (let i = 0; i < vertices.length - 1; i++) {
-                triangles.push(0); // Center point
-                triangles.push(i + 1);
-                triangles.push(i + 2 > vertices.length - 1 ? 1 : i + 2);
-            }
+                // Triangulate the polygon
+                for (let i = 0; i < vertices.length - 1; i++) {
+                    triangles.push(0); // Center point
+                    triangles.push(i + 1);
+                    triangles.push(i + 2 > vertices.length - 1 ? 1 : i + 2);
+                }
 
-            // Create geometry
-            const geometry = new THREE.BufferGeometry();
-            
-            // Create positions array from vertices
-            const positions = new Float32Array(vertices.length * 3);
-            vertices.forEach((vertex, i) => {
-                positions[i * 3] = vertex.x;
-                positions[i * 3 + 1] = vertex.y;
-                positions[i * 3 + 2] = vertex.z;
+                // Create geometry
+                const geometry = new THREE.BufferGeometry();
+                
+                // Create positions array from vertices
+                const positions = new Float32Array(vertices.length * 3);
+                vertices.forEach((vertex, i) => {
+                    positions[i * 3] = vertex.x;
+                    positions[i * 3 + 1] = vertex.y;
+                    positions[i * 3 + 2] = vertex.z;
+                });
+
+                // Set attributes
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.setIndex(triangles);
+                
+                // Compute vertex normals for proper lighting
+                geometry.computeVertexNormals();
+
+                // Create material
+                const material = new THREE.MeshPhongMaterial({
+                    color: parseInt(polygon.color, 16),
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.8
+                });
+
+                const mesh = new THREE.Mesh(geometry, material);
+                this.scene.add(mesh);
             });
-
-            // Set attributes
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geometry.setIndex(triangles);
-            
-            // Compute vertex normals for proper lighting
-            geometry.computeVertexNormals();
-
-            // Create material
-            const material = new THREE.MeshPhongMaterial({
-                color: parseInt(polygon.color, 16),
-                side: THREE.DoubleSide,
-                transparent: true,
-                opacity: 0.8
-            });
-
-            const mesh = new THREE.Mesh(geometry, material);
-            this.meshes.push(mesh);
-            this.scene.add(mesh);
         });
     } 
 
