@@ -14,6 +14,7 @@ class PolygonViewer {
         this.meshes = [];   // Stores meshes
         this.gridHelper3D = null;       // 3D grid helper
         this.axesHelper3D = null;       // 3D axes helper
+        this.labels = [];   // Stores axis labels
         this.init2DViewer();
         this.init3DViewer();
     }
@@ -225,6 +226,12 @@ class PolygonViewer {
             this.scene.remove(this.axesHelper3D);
         }
 
+        // Clear any existing labels
+        if (this.labels) {
+            this.labels.forEach(label => this.scene.remove(label));
+        }
+        this.labels = [];
+
         // Calculate scene bounds from all vertices
         const allPoints = this.currSection.polygons.flatMap(polygon =>
             polygon.points3D.map(p => p.vertex)
@@ -242,7 +249,7 @@ class PolygonViewer {
         // Calculate grid size based on scene bounds
         const gridSize = Math.max(
             bounds.maxX - bounds.minX,
-            bounds.maxZ - bounds.minZ
+            bounds.maxY - bounds.minY
         ) * 2;
 
         const gridDivisions = 50;
@@ -252,8 +259,80 @@ class PolygonViewer {
         this.scene.add(this.gridHelper3D);
 
         // Add axes helper
-        this.axesHelper3D = new THREE.AxesHelper(gridSize);
+        this.axesHelper3D = new THREE.AxesHelper(gridSize / 2);
         this.scene.add(this.axesHelper3D);
+
+         // Create axis labels
+        const createLabel = (text, position, color, size = 1.5) => {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 512; // Increased canvas size for better resolution
+            canvas.height = 512;
+            
+            // Draw text
+            context.font = 'Bold 120px Arial'; // Increased font size
+            context.fillStyle = color;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(text, 256, 256);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            sprite.position.copy(position);
+            
+            // Increased label size
+            const labelSize = gridSize / 15 * size;
+            sprite.scale.set(labelSize, labelSize, 1);
+            
+            return sprite;
+        };
+
+        // Add grid values
+        const addGridValues = () => {
+            const step = gridSize / gridDivisions;
+            const valueOffset = step / 2;
+            
+            // Add X axis values
+            for (let i = -gridDivisions/2; i <= gridDivisions/2; i++) {
+                if (i !== 0) { // Skip 0 to avoid cluttering the center
+                    const value = Math.round(i * step);
+                    const label = createLabel(value.toString(), 
+                        new THREE.Vector3(i * step, -valueOffset, 0), 
+                        '#666666', 
+                        0.8
+                    );
+                    this.labels.push(label);
+                    this.scene.add(label);
+                }
+            }
+
+            // Add Y axis values (Z in Three.js)
+            for (let i = -gridDivisions/2; i <= gridDivisions/2; i++) {
+                if (i !== 0) {
+                    const value = Math.round(i * step);
+                    const label = createLabel(value.toString(), 
+                        new THREE.Vector3(-valueOffset, -valueOffset, i * step), 
+                        '#666666', 
+                        0.8
+                    );
+                    this.labels.push(label);
+                    this.scene.add(label);
+                }
+            }
+        };
+
+        // Add main axis labels with increased size
+        const labelOffset = gridSize / 2 + gridSize / 10;
+        this.labels.push(createLabel('X', new THREE.Vector3(labelOffset, 0, 0), '#ff0000', 2));
+        this.labels.push(createLabel('Y', new THREE.Vector3(0, 0, labelOffset), '#0000ff', 2));
+        this.labels.push(createLabel('Z', new THREE.Vector3(0, labelOffset, 0), '#00ff00', 2));
+
+        // Add grid values
+        addGridValues();
+
+        // Add all labels to scene
+        this.labels.forEach(label => this.scene.add(label));
 
         // Position camera based on scene bounds
         const cameraDistance = Math.max(gridSize, bounds.maxY) / 4;
@@ -389,8 +468,8 @@ class PolygonViewer {
                 vertices.push(
                     new THREE.Vector3(
                         point.vertex[0],    // X
-                        point.vertex[1],    // Y
                         point.vertex[2],    // Z
+                        point.vertex[1],    // Y
                     )
                 )
             ));
