@@ -327,6 +327,20 @@ class PolygonViewer {
                     this.scene.add(label);
                 }
             }
+
+            // Add Z axis values (Y in Three.js)
+            for (let i = 0; i <= gridDivisions/2; i++) {
+                if (i !== 0) {   // Skip 0 to avoid cluttering the center
+                    const value = Math.round(centerZ + (i * step));
+                    const label = createLabel(value.toString(), 
+                        new THREE.Vector3(centerX - valueOffset, centerZ + (i * step), centerY - valueOffset), 
+                        '#666666', 
+                        0.8
+                    );
+                    this.labels.push(label);
+                    this.scene.add(label);
+                }
+            }
         };
 
         // Add axis labels with offset from center
