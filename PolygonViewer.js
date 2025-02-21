@@ -284,8 +284,9 @@ class PolygonViewer {
             // Add X axis values
             for (let i = -gridDivisions/2; i <= gridDivisions/2; i++) {
                 if (i !== 0) {   // Skip 0 to avoid cluttering the center
-                    const value = Math.round(centerX + (i * step));
-                    const label = createLabel(value.toString(), 
+                    const value = centerX + (i * step);
+                    const label = createLabel(
+                        value.toFixed(2), 
                         new THREE.Vector3(centerX + (i * step), -valueOffset, centerY), 
                         '#666666', 
                         0.8
@@ -297,8 +298,9 @@ class PolygonViewer {
             // Add Y axis values (Z in Three.js)
             for (let i = -gridDivisions/2; i <= gridDivisions/2; i++) {
                 if (i !== 0) {   // Skip 0 to avoid cluttering the center
-                    const value = Math.round(centerY + (i * step));
-                    const label = createLabel(value.toString(), 
+                    const value = centerY + (i * step);
+                    const label = createLabel(
+                        value.toFixed(2), 
                         new THREE.Vector3(centerX - valueOffset, -valueOffset, centerY + (i * step)), 
                         '#666666', 
                         0.8
@@ -310,8 +312,9 @@ class PolygonViewer {
             // Add Z axis values (Y in Three.js)
             for (let i = 0; i <= gridDivisions/2; i++) {
                 if (i !== 0) {   // Skip 0 to avoid cluttering the center
-                    const value = Math.round(centerZ + (i * step));
-                    const label = createLabel(value.toString(), 
+                    const value = centerZ + (i * step);
+                    const label = createLabel(
+                        value.toFixed(2), 
                         new THREE.Vector3(centerX - valueOffset, centerZ + (i * step), centerY - valueOffset), 
                         '#666666', 
                         0.8
